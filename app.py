@@ -14,35 +14,30 @@ from llama_index.postprocessor.nvidia_rerank import NVIDIARerank
 
 load_dotenv()
 
-send_system_messages = True
-
-CHATBOT_LLM = 'meta/llama-3.1-70b-instruct'
-CHATBOT_LLM2 = 'meta/llama-3.1-8b-instruct'
-VISION_LLM = 'meta/llama-3.2-11b-vision-instruct'
-VISION_LLM_2 = 'microsoft/phi-3.5-vision-instruct'
-
-#configure application
+# configure application
 Settings.text_spllitter = SentenceSplitter(chunk_size=500)
 Settings.embed_model = NVIDIAEmbedding(mode="NV-Embed-QA", truncate="END")
-Settings.llm = NVIDIA(model=CHATBOT_LLM2)
 
-# Check for API key (should be in .env)
-NVIDIA_API_KEY = ""
-LLAMA_VISION_API_KEY = os.getenv("LLAMA_VISION_API_KEY")
-
+# Check for API key and LLM model (should be in .env)
 if os.getenv('NVIDIA_API_KEY') is None:
-    raise ValueError("No NVIDIA_API_KEY set...")
+    raise ValueError("No NVIDIA_API_KEY set in .env")
 else:
     NVIDIA_API_KEY = os.getenv("NVIDIA_API_KEY")
 
+if os.getenv('NIM_LLM_MODEL') is None:
+    raise ValueError("No NIM_LLM_MODEL set in .env")
+else:
+    Settings.llm = NVIDIA(model=os.getenv('NIM_LLM_MODEL'))
+
 index = None
 query_engine = None
+send_system_messages = True
 
-#create milvus vector store and index
+# create milvus vector store and index
 vector_store = MilvusVectorStore(uri='./milvus_store_context.db', dim=1024, overwrite=True)
 storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
-# system messages
+# system messages for the chatbot
 system_messages = ["You are an assistant built to help diagnose issues with vehicles.",
                    "When the user asks for help, try to reference the user-provided car type, codes, and description in context with your response.",
                    "Make sure to verify if the car type and codes provided exist before discussing them. If necessary, correct these for the user and remeber your corrections.",
