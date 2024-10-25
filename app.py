@@ -12,6 +12,9 @@ from llama_index.embeddings.nvidia import NVIDIAEmbedding
 from llama_index.llms.nvidia import NVIDIA
 from llama_index.postprocessor.nvidia_rerank import NVIDIARerank
 
+from nemo_curator_utils import CuratorPipeline as curator
+from nemo_curator_utils import CommonCrawl as CC
+
 load_dotenv()
 
 # configure application
@@ -29,12 +32,14 @@ if os.getenv('NIM_LLM_MODEL') is None:
 else:
     Settings.llm = NVIDIA(model=os.getenv('NIM_LLM_MODEL'))
 
-index = None
-query_engine = None
+user_index = None
+user_query_engine = None
+bot_query_engine = None
 send_system_messages = True
 
-# create milvus vector store and index
-vector_store = MilvusVectorStore(uri='./milvus_store_context.db', dim=1024, overwrite=True)
+# create milvus vector store and user_index
+os.makedirs('./vectorstores', exist_ok=True)
+vector_store = MilvusVectorStore(uri='./vectorstores/milvus_store_context.db', dim=1024, overwrite=True)
 storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
 # system messages for the chatbot
@@ -43,6 +48,24 @@ system_messages = ["You are an assistant built to help diagnose issues with vehi
                    "Make sure to verify if the car type and codes provided exist before discussing them. If necessary, correct these for the user and remeber your corrections.",
                    "Try not to give generic advice unless the information is vague. Use the specific car type and p codes to figure out your solution."
                    ]
+
+# system_messages = ["You are an assistant built to help people understand things.",
+#                    "When the user asks for help, try to reference the user-provided info in context with your response.",
+#                     "If the user asks you a specific question, make sure you verify you are correct."
+#                    ]
+
+# user index for uploaded content and curator for database to inference with
+# user_index = VectorStoreIndex([])
+curator_index = None
+
+# retrieve curated data and create user_index
+cc = CC()
+try:
+    curator_index = cc.get_curator_index()
+    bot_query_engine = curator_index.as_query_engine(similarity_top_k=20, streaming=True)
+        
+except Exception as e:
+    raise ValueError(f"Failure to construct curator dataset: {e}")
 
 def llama_vision_processor(image):
 
@@ -92,7 +115,7 @@ def llama_vision_processor(image):
     return None
 
 def process_issue_context(files, issue_description="", car_type="", OBD_codes=""):
-    global index, query_engine, vector_store, storage_context
+    global user_index, user_query_engine, bot_query_engine, vector_store, storage_context
     try:
         documents = []
         file_paths = []
@@ -109,7 +132,7 @@ def process_issue_context(files, issue_description="", car_type="", OBD_codes=""
                     if image_analysis_result:
                         documents.append(Document(text=image_analysis_result, doc_id=file_path))
                 else:
-                    directory = os.path.dirname(file_path)
+                    # directory = os.path.dirname(file_path)
                     reader = SimpleDirectoryReader(input_files=[file_path])
                     documents.extend(reader.load_data())
 
@@ -117,9 +140,17 @@ def process_issue_context(files, issue_description="", car_type="", OBD_codes=""
         issue_doc = Document(text=issue_context, doc_id="issue-context")
         documents.append(issue_doc)
 
-        index = VectorStoreIndex.from_documents(documents, storage_context=storage_context)
+        if not user_index: # create one or load
+            user_index = VectorStoreIndex.from_documents(documents, storage_context=storage_context)
+        #user_index.storage_context.persist()
+        # else:
+        #     user_index = VectorStoreIndex.load_from_disk(storage_context=storage_context)
+        #     user_index.insert_documents(documents)
+        #     user_index.save("./")
 
-        query_engine = index.as_query_engine(similarity_top_k=20, streaming=True)
+        #update user_query_engine
+        user_query_engine = user_index.as_query_engine(similarity_top_k=20, streaming=True)
+
 
         return f"Successfully loaded {len(documents)} documents from {len(file_paths)} files - "
     
@@ -144,39 +175,49 @@ with gr.Blocks() as app:
         issue_description = gr.Textbox(label="Issue Description", placeholder="Describe the problem you're experiencing with the car", lines=5)
 
     #Buttons
-    generate_images = gr.Checkbox(label="Generate output images")
+    #generate_images = gr.Checkbox(label="Generate output images")
     submit_button = gr.Button("Submit")
-    user_params_output = gr.Textbox(label="User Input Status")
+    user_params_output = gr.Textbox(label="Loading Status:")
 
-    chatbot = gr.Chatbot(value=[gr.ChatMessage(role='assistant', content='Hi, ask me anything!')], type='messages')
+    chatbot = gr.Chatbot(type='messages')
 
     def user(user_message, history: list):
         return history + [{'role': 'user', 'content': user_message}]
 
     def bot(user_message, history: list):
-        global query_engine, system_messages, send_system_messages
+        global user_query_engine, bot_query_engine, system_messages, send_system_messages
 
-        if query_engine is None:
-            history.append({'role': 'assistant', 'content': "Hi, please provide some information first."})
-            yield history
-            return
+        if user_message:
+            if user_query_engine is None:
+                history.append({'role': 'assistant', 'content': "Hi, please provide some information first."})
+                yield history
+                return
 
-        if send_system_messages:
-            for msg in system_messages:
-                history.append({'role': 'system', 'content': msg})
-            send_system_messages = False  # Disable further system messages
+            if send_system_messages:
+                for msg in system_messages:
+                    history.append({'role': 'system', 'content': msg})
+                send_system_messages = False  # Disable further system messages
 
-        bot_message = query_engine.query(user_message)
+            # query the data
+            user_results = user_query_engine.query(user_message)
+            user_info = ''
+            for result in user_results.response_gen:
+                user_info += result
+            bot_query = " ".join(user_info)
+            bot_message = bot_query_engine.query(bot_query)
 
-        history.append({'role': 'assistant', 'content': ""})
-        for character in bot_message.response_gen:
-            history[-1]['content'] += character
-            time.sleep(0.05)
-            yield history
+            # generate response
+            history.append({'role': 'assistant', 'content': ""})
+            for character in bot_message.response_gen:
+                history[-1]['content'] += character
+                time.sleep(0.05)
+                yield history
 
     msg = gr.Textbox(label="Enter your question", interactive=True)
 
-    auto_query = gr.State("What is wrong and how can I solve it? Please give me a concise step-by-step solution if possible. Add proper line breaks between steps for readability.")
+    auto_query=None
+    # auto_query = gr.State("Hi, summarize what my documents and information say. Mention any descrepencies between what people say if possible.")
+    auto_query = gr.State("What is wrong with my vehicle and how can I solve it? Please give me a concise step-by-step solution if possible. Please format your response Markdown style.")
     submit_button.click(process_issue_context, inputs=[file_input, issue_description, car_type, OBD_codes], outputs=user_params_output, queue=False).then(bot, inputs=[auto_query, chatbot], outputs=[chatbot])
 
     clear_btn = gr.Button("Clear")

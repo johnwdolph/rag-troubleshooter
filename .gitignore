@@ -1,4 +1,6 @@
 __pycache__/
+datasets/
 .vscode
 *.db
 *.db.lock
+*.warc*

@@ -19,9 +19,11 @@ The following tools were used:
 
 3. [`llama-3.1-11b-vision-instruct`](https://build.nvidia.com/meta/llama-3.2-11b-vision-instruct) for image analysis
 
-4. [`NVIDIA Nemo Curator`](https://github.com/NVIDIA/NeMo-Curator) to curate vehicle data and troubleshooting information to the chatbot
+4. [`embed-qa-4`](https://build.nvidia.com/nvidia/embed-qa-4) to create vector embeddings from text
 
-5. [`NVIDIA Guardrails`](https://github.com/NVIDIA/NeMo-Guardrails) to make sure the chatbot stays on the topic of vehicles
+5. [`NVIDIA Nemo Curator`](https://github.com/NVIDIA/NeMo-Curator) to curate vehicle data and troubleshooting information to the chatbot
+
+6. [`NVIDIA Nemo Guardrails`](https://github.com/NVIDIA/NeMo-Guardrails) to make sure the chatbot stays on the topic of vehicles
 
 ## 2. Setup
 
@@ -40,8 +42,9 @@ pip install Cython
 **Note**: You are not required to create a virtual environment, but will need to install dependencies manually otherwise.
 
 ```bash
-conda env create --file environment.yml --name rag-troubleshooter.venv
+conda env create --name rag-troubleshooter.venv
 conda activate rag-troubleshooter.venv
+pip install -r requirements.txt
 ```
 
 3. Obtain and NVIDIA API key:
