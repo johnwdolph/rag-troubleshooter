@@ -1,6 +1,7 @@
 __pycache__/
 datasets/
-.vscode
+vectorstores/
+.vscode/
 *.db
 *.db.lock
 *.warc*

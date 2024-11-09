@@ -3,7 +3,9 @@
 - [1. Introduction](#1-introduction)
 - [2. Setup](#2-setup)
 - [3. How to Use](#3-using-the-program)
-- [4. Cleanup](#4-cleanup-optional)
+- [4. Additional Configuration](#4-additional-configuration-optional)
+- [5. Cleanup](#5-cleanup-optional)
+- [6. Ideas for the Future](#6-ideas-for-the-future)
 
 ## 1. Introduction
 
@@ -15,15 +17,13 @@ The following tools were used:
 
 1. [`Gradio`](https://www.gradio.app/) for the user interface
 
-2. [`llama-3.1-70b-instruct`](https://build.nvidia.com/meta/llama-3.2-70b-instruct) LLM model for the chatbot
+2. [`llama-3.1-8b-instruct`](https://build.nvidia.com/meta/llama-3.2-70b-instruct) LLM model for the chatbot
 
 3. [`llama-3.1-11b-vision-instruct`](https://build.nvidia.com/meta/llama-3.2-11b-vision-instruct) for image analysis
 
 4. [`embed-qa-4`](https://build.nvidia.com/nvidia/embed-qa-4) to create vector embeddings from text
 
 5. [`NVIDIA Nemo Curator`](https://github.com/NVIDIA/NeMo-Curator) to curate vehicle data and troubleshooting information to the chatbot
-
-6. [`NVIDIA Nemo Guardrails`](https://github.com/NVIDIA/NeMo-Guardrails) to make sure the chatbot stays on the topic of vehicles
 
 ## 2. Setup
 
@@ -63,7 +63,33 @@ python app.py
 
 2. Once you submit, the chatbot will automatically respond using your provided information as context. You may ask it additional questions thereafter.
 
-## 4. Cleanup (Optional) 
+## 4. Additional Configuration (Optional)
+
+No curated data is included by default. 
+
+If you would like to use `CommonCrawl` data, include the following command line arguments:
+
+```bash
+# Use CommonCrawl dataset when it already exists
+python app.py --source commoncrawl
+
+# Download and use CommonCrawl dataset with a specified URL limit to download
+python app.py --source commoncrawl --download_url_limit 5
+```
+
+If you would like to use local data as your dataset, use these arguments:
+
+```bash
+# Use local dataset at default location 'sample_data'
+python app.py --source local
+
+# Use local dataset at user-preferred location (Replace <ENTER_DIRECTORY_HERE> with directory)
+python app.py --source local --location <ENTER_DIRECTORY_HERE>
+```
+
+The sample documents in `sample_documents` may be manually uploaded in the file upload location when the program is running. Additionally, `sample_data` includes a car manual. These are included for testing/demonstration purposes. If you would like to tune the dataset for a different vehicle while using `local` data, remove/replace the included car manual with your own or specify a different location.
+
+## 5. Cleanup (Optional) 
 
 When you are done using the program, you can destroy the `Anaconda` virtual environment as follows:
 
@@ -73,3 +99,11 @@ conda env remove --name rag-troubleshooter.venv
 ```
 
 This will free space on your system occupied by the program dependencies.
+
+## 6. Ideas for the Future
+
+1. AR application to give step-by-step visual overlay instructions on each generated repair procedure.
+
+2. Add vehicle troubleshooting forum data to curation dataset to help generate unconventional solutions.
+
+3. Generate images and diagrams for particular vehicle to help convey technical instructions.
