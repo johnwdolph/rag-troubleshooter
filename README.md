@@ -89,6 +89,8 @@ python app.py --source local --location <ENTER_DIRECTORY_HERE>
 
 The sample documents in `sample_documents` may be manually uploaded in the file upload location when the program is running. Additionally, `sample_curation_data` includes a car manual. These are included for testing/demonstration purposes. If you would like to tune the dataset for a different vehicle while using `local` data, remove/replace the included car manual with your own or specify a different location.
 
+You may also change the `LLM` model by modifying the `.env` file. An alternative to `meta/llama-3.1-8b-instruct` can be something like `meta/llama-3.1-40b-instruct`.
+
 ## 5. Cleanup (Optional) 
 
 When you are done using the program, you can destroy the `Anaconda` virtual environment as follows:

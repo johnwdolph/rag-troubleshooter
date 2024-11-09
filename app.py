@@ -88,14 +88,21 @@ try:
             print(f'using commoncrawl and downloading data with url_limit: {url_download_limit}')
             cc = CC(url_limit=url_download_limit, download=True)
             curator_index = cc.get_curator_index()
+            print(curator_index)
         else:
             print('using commoncrawl')
             cc = CC()
             curator_index = cc.get_curator_index()
+            print(curator_index)
     elif use_local_dir:
         print(f'using local directory {local_dir}')
         ld = LD(data_directory=local_dir)
         curator_index = ld.get_curator_index()
+        print(curator_index)
+
+    else:
+        curator_index = None
+        print(curator_index)
 
     if curator_index:
         bot_query_engine = curator_index.as_query_engine(similarity_top_k=20, streaming=True)
@@ -236,10 +243,13 @@ with gr.Blocks() as app:
 
             # use curated data if available.
             if curator_index:
-                user_info = ''
-                for result in user_results.response_gen:
-                    user_info += result
-                bot_query = " ".join(user_info)
+                # user_info = ''
+                user_info = ''.join(result for result in user_results.response_gen)
+                bot_query = f"User result: {user_info}"
+
+                # for result in user_results.response_gen:
+                #     user_info += result
+                # bot_query = " ".join(user_info)
                 bot_message = bot_query_engine.query(bot_query)
                 user_results = bot_message
 
