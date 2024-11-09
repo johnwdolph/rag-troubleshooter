@@ -80,14 +80,14 @@ python app.py --source commoncrawl --download_url_limit 5
 If you would like to use local data as your dataset, use these arguments:
 
 ```bash
-# Use local dataset at default location 'sample_data'
+# Use local dataset at default location 'sample_curation_data'
 python app.py --source local
 
 # Use local dataset at user-preferred location (Replace <ENTER_DIRECTORY_HERE> with directory)
 python app.py --source local --location <ENTER_DIRECTORY_HERE>
 ```
 
-The sample documents in `sample_documents` may be manually uploaded in the file upload location when the program is running. Additionally, `sample_data` includes a car manual. These are included for testing/demonstration purposes. If you would like to tune the dataset for a different vehicle while using `local` data, remove/replace the included car manual with your own or specify a different location.
+The sample documents in `sample_documents` may be manually uploaded in the file upload location when the program is running. Additionally, `sample_curation_data` includes a car manual. These are included for testing/demonstration purposes. If you would like to tune the dataset for a different vehicle while using `local` data, remove/replace the included car manual with your own or specify a different location.
 
 ## 5. Cleanup (Optional) 
 

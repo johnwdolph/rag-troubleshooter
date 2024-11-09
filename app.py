@@ -36,7 +36,7 @@ parser.add_argument(
 
 parser.add_argument(
     "--location",
-    default="sample_data",
+    default="sample_curation_data",
     help="optional path to local directory with data to curate"
 )
 

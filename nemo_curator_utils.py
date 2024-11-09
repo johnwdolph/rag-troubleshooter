@@ -30,7 +30,7 @@ class CuratorPipeline:
 class LocalDirectory:
     """ Creates and holds an index based on files in a local directory """
 
-    def __init__(self, index_path='./vectorstores/milvus_store_curator_ld.db', data_directory='./sample_data'):
+    def __init__(self, index_path='./vectorstores/milvus_store_curator_ld.db', data_directory='./sample_curation_data'):
         self.vector_store = MilvusVectorStore(uri=index_path, dim=1024, overwrite=True)
         self.storage_context = StorageContext.from_defaults(vector_store=self.vector_store)
         self.curator_index = None
